@@ -6,22 +6,13 @@ namespace AVLBaum
 {
     internal class AVL<T>
     {
-        //private Node rootNode;
-        private Func<T, T, int> comparer;
-        Node rootNode;
-
-        /// <summary>
-        /// Empty Constructor
-        /// </summary>
-        public AVL()
-        {
-
-        }
-
         public AVL(Func<T, T, int> comparer)
         {
             this.comparer = comparer;
         }
+
+        private Func<T, T, int> comparer;
+        private Node rootNode;
 
         /// <summary>
         /// Add
@@ -61,54 +52,6 @@ namespace AVLBaum
             }
 
             return current;
-        }
-
-        /// <summary>
-        /// This function rotates the tree right and returns the updated root
-        /// </summary>
-        /// <param name="parent"></param>
-        /// <returns></returns>
-        private Node RightRotation(Node parent)
-        {
-            Node node = parent.leftNode;
-            parent.leftNode = node.rightNode;
-            node.rightNode = parent;
-            return node;
-        }
-
-        /// <summary>
-        /// This function rotates the tree left and returns the updated root
-        /// </summary>
-        /// <param name="root"></param>
-        /// <returns></returns>
-        private Node LeftRotation(Node parent)
-        {
-            Node node = parent.rightNode;
-            parent.rightNode = node.leftNode;
-            node.leftNode = parent;
-            return node;
-        }
-
-        /// <summary>
-        /// This function rotates the tree right-left and returns the updated root
-        /// </summary>
-        /// <param name="parent"></param>
-        /// <returns></returns>
-        private Node RightLeftRotation(Node parent)
-        {
-            parent.rightNode = RightRotation(parent.rightNode);
-            return LeftRotation(parent);
-        }
-
-        /// <summary>
-        /// This function rotates the tree left-right and returns the updated root
-        /// </summary>
-        /// <param name="parent"></param>
-        /// <returns></returns>
-        private Node LeftRightRotation(Node parent)
-        {
-            parent.leftNode = LeftRotation(parent.leftNode);
-            return RightRotation(parent);
         }
 
         /// <summary>
@@ -242,7 +185,7 @@ namespace AVLBaum
             }
             else if (bFactor < -1)
             {
-                if (BalanceFactor(node.rightNode) > 0)
+                if (BalanceFactor(node.rightNode) < 0)
                 {
                     node = LeftRotation(node);
                 }
@@ -260,7 +203,7 @@ namespace AVLBaum
         /// <param name="data"></param>
         public void Remove(T data)
         {
-            rootNode = RemoveRec(data, rootNode);
+            rootNode = RemoveRecursive(data, rootNode);
             Balance();
         }
 
@@ -270,42 +213,100 @@ namespace AVLBaum
         /// <param name="data"></param>
         /// <param name="node"></param>
         /// <returns></returns>
-        private Node RemoveRec(T data, Node node)
+        private Node RemoveRecursive(T dataToRemove, Node current)
         {
-            if(node == null)
-            {
-                return node;
-            }
+            if (current == null) return null;
 
-            int compare = comparer(node.data, data);
+            int compareValue = comparer(current.data, dataToRemove);
 
-            if(compare == 0)
+            if (compareValue == 0)
             {
-                if(node.rightNode == null && node.leftNode == null)
+                // Captures all cases where there aren't 2 childnodes
+                if (current.rightNode == null)
                 {
-                    return null;
+                    if (current.leftNode == null)
+                    {
+                        return null;
+                    }
+
+                    return current.leftNode;
                 }
-                return node.leftNode;
+                else if (current.leftNode == null)
+                {
+                    return current.rightNode;
+                }
+
+                // Replace root with the Node with higher depth while adding the node with lower depth to it
+                if (BalanceFactor(current) > 0)
+                {
+                    AddRec(current.rightNode, current.leftNode);
+                    return current.leftNode;
+                }
+                else
+                {
+                    AddRec(current.leftNode, current.rightNode);
+                    return current.rightNode;
+                }
             }
 
-            else if(node.leftNode == null) { return node.rightNode; }
-
-            if(BalanceFactor(node) < 0)
+            if (compareValue < 0)
             {
-                AddRec(node.leftNode, node.rightNode);
-                return node.rightNode;
+                current.rightNode = RemoveRecursive(dataToRemove, current.rightNode);
             }
-            if(BalanceFactor(node) > 0)
+            else
             {
-                AddRec(node.rightNode, node.leftNode);
-                return node.leftNode;
+                current.leftNode = RemoveRecursive(dataToRemove, current.leftNode);
             }
 
-            if(compare < 0) { node.rightNode = RemoveRec(data, node.rightNode); }
-            else { node.leftNode = RemoveRec(data, node.leftNode); }
+            return current;
+        }
 
-           
-            return node;
+        /// <summary>
+        /// Rotates right and returns the new root of that rotation
+        /// </summary>
+        /// <param name="root"></param>
+        /// <returns></returns>
+        private Node RightRotation(Node root)
+        {
+            Node newRoot = root.leftNode;
+            root.leftNode = newRoot.rightNode;
+            newRoot.rightNode = root;
+            return newRoot;
+        }
+
+        /// <summary>
+        /// Rotates left and returns the new root of that rotation
+        /// </summary>
+        /// <param name="root"></param>
+        /// <returns></returns>
+        private Node LeftRotation(Node root)
+        {
+            Node newRoot = root.rightNode;
+            root.rightNode = newRoot.leftNode;
+            newRoot.leftNode = root;
+            return newRoot;
+        }
+
+        /// <summary>
+        /// Rotates left-right and returns the new root of that rotation
+        /// </summary>
+        /// <param name="root"></param>
+        /// <returns></returns>
+        private Node LeftRightRotation(Node root)
+        {
+            root.leftNode = LeftRotation(root.leftNode);
+            return RightRotation(root);
+        }
+
+        /// <summary>
+        /// Rotates right-left and returns the new root of that rotation
+        /// </summary>
+        /// <param name="root"></param>
+        /// <returns></returns>
+        private Node RightLeftRotation(Node root)
+        {
+            root.rightNode = RightRotation(root.rightNode);
+            return LeftRotation(root);
         }
 
         /// <summary>
